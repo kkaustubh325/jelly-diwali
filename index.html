@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>8-Bit Happy Diwali Jellyfish</title>
+    <!-- Retro 8-bit Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and Base Styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            background-color: #120b29;
+            color: #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Arcade Cabinet Container */
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 820px;
+            display: flex;
+            flex-direction: column;
+            background-color: #231854;
+            border: 4px solid #4a3b8c;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(10, 5, 30, 0.6);
+        }
+
+        @media (min-width: 500px) {
+            #game-wrapper {
+                height: 92vh;
+                border-radius: 12px;
+            }
+        }
+
+        /* Top Arcade HUD */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 18px;
+            background-color: #1b1242;
+            border-bottom: 4px solid #3c2f7a;
+            font-size: 13px;
+            color: #ff9900;
+            text-shadow: 2px 2px 0px #000000;
+            z-index: 10;
+        }
+
+        .hud-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Retro Pixel Buttons */
+        .pixel-btn {
+            background: linear-gradient(180deg, #ffae00 0%, #e66000 100%);
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 0 #7a2900, 0 6px 10px rgba(0,0,0,0.5);
+            color: #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000;
+            border-radius: 4px;
+            transition: transform 0.08s, box-shadow 0.08s;
+        }
+
+        .pixel-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #7a2900;
+        }
+
+        .pixel-btn.small {
+            padding: 6px 8px;
+            font-size: 10px;
+        }
+
+        /* Canvas Area */
+        #canvas-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        /* Overlays (Start Screen & Win Banner) */
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(20, 12, 54, 0.82);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            z-index: 20;
+            transition: opacity 0.3s ease;
+        }
+
+        #overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .title-glow {
+            font-size: 22px;
+            line-height: 1.5;
+            color: #ffea00;
+            text-shadow: 3px 3px 0 #d93800, -1px -1px 0 #000;
+            margin-bottom: 18px;
+            animation: floatText 2s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-size: 10px;
+            line-height: 1.8;
+            color: #d4c8ff;
+            margin-bottom: 28px;
+            max-width: 340px;
+        }
+
+        /* Win Controls Bar (Non-obstructive bottom floating bar) */
+        #win-bar {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 25;
+            pointer-events: auto;
+            width: 90%;
+        }
+
+        #win-bar.hidden {
+            display: none !important;
+        }
+
+        /* Mobile / On-screen D-Pad Controls outside canvas */
+        #controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background-color: #1b1242;
+            border-top: 4px solid #3c2f7a;
+            gap: 8px;
+        }
+
+        .dpad-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            background: #352775;
+            border: 3px solid #6b56c9;
+            box-shadow: 0 3px 0 #150e36;
+            color: #ffea00;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            width: 48px;
+            height: 42px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .ctrl-btn:active, .ctrl-btn.active {
+            transform: translateY(2px);
+            background: #523eb0;
+            box-shadow: 0 1px 0 #150e36;
+        }
+
+        @keyframes floatText {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes pulseBadge {
+            from { transform: scale(1); border-color: #ffea00; }
+            to { transform: scale(1.04); border-color: #ff55cc; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <!-- Top Arcade HUD matching reference -->
+    <div id="hud">
+        <div id="player-label">Player 1</div>
+        <div class="hud-controls">
+            <div id="coins-label">Coins: 100</div>
+            <button id="mute-btn" class="pixel-btn small" title="Toggle Sound">🔊</button>
+        </div>
+    </div>
+
+    <!-- Main Playable Canvas -->
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Start / Instructions Overlay -->
+        <div id="overlay">
+            <div class="title-glow">HAPPY DIWALI<br>JELLYFISH</div>
+            <p class="subtitle">
+                GUIDE THE JELLYFISH TO CATCH ALL 11 LETTERS OF "HAPPY DIWALI"!<br><br>
+                • ARROWS / WASD OR DRAG TO SWIM<br>
+                • LETTERS CYCLE UNTIL CAUGHT<br>
+                • COMPLETE THE WORD TO LIGHT THE LANTERN!
+            </p>
+            <button id="start-btn" class="pixel-btn">▶ START GAME</button>
+        </div>
+
+        <!-- Win Level Floating Action (Allows full view of lantern & sweets) -->
+        <div id="win-bar" class="hidden">
+            <button id="replay-btn" class="pixel-btn small">↻ PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Tactile Bottom Controls for Mobile & Desktop -->
+    <div id="controls-bar">
+        <div class="dpad-group">
+            <button class="ctrl-btn" id="btn-left" aria-label="Move Left">◀</button>
+            <button class="ctrl-btn" id="btn-right" aria-label="Move Right">▶</button>
+        </div>
+        <div style="font-size: 9px; color: #9c8ce0; text-align: center;">DRAG OR PAD</div>
+        <div class="dpad-group">
+            <button class="ctrl-btn" id="btn-up" aria-label="Move Up">▲</button>
+            <button class="ctrl-btn" id="btn-down" aria-label="Move Down">▼</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * 8-Bit Happy Diwali Jellyfish Game
+ * Complete self-contained retro arcade experience using custom uploaded MP3 audio tracks,
+ * pixel-art jellyfish-to-lantern transformation, and falling Diwali sweets celebration.
+ */
+
+// ==========================================
+// 1. AUDIO ENGINE (Pre-Embedded Base64 MP3s + Chiptune Fallback)
+// ==========================================
+// Paste your Base64-encoded MP3 strings between the quotes below:
+const EMBEDDED_AUDIO = {
+    bgmPlay: '',   // e.g. 'data:audio/mp3;base64,SUQzBAAAAAA...' (moodmode-8-bit-retro-game-music-233964.mp3)
+    sfxCoin: 'data:audio/mpeg;base64,//uQRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABOAACA+QADBgkNDRATFhoaHSAkJCcqLTExNDc7Oz5BREhIS05SUlVYW19fYmVpaWxvcnZ2eXyAg4OGiY2NkJOWmpqdoKSkp6qtsbG0t7u7vsHEyMjLztLS1djb39/i5enp7O/y9vb5/P8AAAA5TEFNRTMuOTlyAaoAAAAALkgAABSAJAJATgAAgAAAgPn5/fLuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//uSZECP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjk5LjVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kmRAj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV',   // e.g. 'data:audio/mp3;base64,SUQzBAAAAAA...' (mario_coin_sound.mp3)
+    bgmWin: ''     // e.g. 'data:audio/mp3;base64,SUQzBAAAAAA...' (sigmamusicart-indian-diwali-music-627508.mp3)
+};
+
+class GameAudio {
+    constructor() {
+        this.muted = false;
+        this.mode = 'menu'; // 'menu', 'play', 'win'
+        this.ctx = null;
+        this.bgmTimer = null;
+        this.step = 0;
+
+        // Track availability of embedded Base64 MP3 data URIs
+        this.mp3Ready = {
+            play: Boolean(EMBEDDED_AUDIO.bgmPlay),
+            win: Boolean(EMBEDDED_AUDIO.bgmWin),
+            coin: Boolean(EMBEDDED_AUDIO.sfxCoin)
+        };
+
+        this.bgmPlay = new Audio(EMBEDDED_AUDIO.bgmPlay || '');
+        this.bgmPlay.loop = true;
+        this.bgmPlay.volume = 0.55;
+
+        this.bgmWin = new Audio(EMBEDDED_AUDIO.bgmWin || '');
+        this.bgmWin.loop = true;
+        this.bgmWin.volume = 0.7;
+
+        this.sfxCollect = new Audio(EMBEDDED_AUDIO.sfxCoin || '');
+        this.sfxCollect.volume = 0.85;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                this.ctx = new AudioCtx();
+            }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+        }
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        this.bgmPlay.muted = this.muted;
+        this.bgmWin.muted = this.muted;
+        this.sfxCollect.muted = this.muted;
+
+        if (this.muted) {
+            this.stopSynthBGM();
+        } else {
+            this.init();
+            if (this.mode === 'play') {
+                this.startBGM('play');
+            } else if (this.mode === 'win') {
+                this.startBGM('win');
+            }
+        }
+        return this.muted;
+    }
+
+    playTone(freq, duration, type = 'square', volume = 0.12, delay = 0) {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+
+    playCollect() {
+        if (this.muted) return;
+        this.init();
+        if (this.mp3Ready.coin) {
+            const sfx = this.sfxCollect.cloneNode();
+            sfx.volume = this.sfxCollect.volume;
+            sfx.play().catch(() => this.playMarioCoinSynth());
+        } else {
+            this.playMarioCoinSynth();
+        }
+    }
+
+    playMarioCoinSynth() {
+        // Authentic 8-bit Mario Coin sound: B5 (987.77 Hz) -> E6 (1318.51 Hz)
+        this.playTone(987.77, 0.08, 'square', 0.18, 0);
+        this.playTone(1318.51, 0.36, 'square', 0.18, 0.075);
+    }
+
+    playCycleTick() {
+        // Subtle crisp tick when letters morph
+        if (this.muted || !this.ctx) return;
+        this.playTone(520, 0.025, 'triangle', 0.03, 0);
+    }
+
+    playWinFanfare() {
+        // Triggered inside startBGM('win')
+    }
+
+    stopSynthBGM() {
+        if (this.bgmTimer) {
+            clearInterval(this.bgmTimer);
+            this.bgmTimer = null;
+        }
+    }
+
+    startSynthBGM(mode) {
+        this.stopSynthBGM();
+        if (this.muted) return;
+        this.init();
+        this.step = 0;
+
+        if (mode === 'play') {
+            // Upbeat 8-Bit Retro Arcade Chiptune Loop
+            const leadNotes = [
+                523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.00, 698.46,
+                523.25, 659.25, 783.99, 1046.50, 987.77, 783.99, 659.25, 587.33
+            ];
+            const bassNotes = [
+                130.81, 196.00, 130.81, 196.00, 146.83, 220.00, 146.83, 220.00,
+                130.81, 196.00, 164.81, 246.94, 196.00, 146.83, 130.81, 196.00
+            ];
+            this.bgmTimer = setInterval(() => {
+                if (this.muted || this.mode !== 'play') return;
+                const idx = this.step % leadNotes.length;
+                this.playTone(leadNotes[idx], 0.14, 'square', 0.08, 0);
+                this.playTone(bassNotes[idx], 0.16, 'triangle', 0.11, 0);
+                this.step++;
+            }, 185);
+        } else if (mode === 'win') {
+            // Festive Indian Diwali Celebration Melody (Sitar/Bansuri inspired 8-bit arpeggio)
+            const festiveNotes = [
+                523.25, 659.25, 783.99, 1046.50, 987.77, 1046.50, 783.99, 659.25,
+                587.33, 698.46, 880.00, 1174.66, 1046.50, 880.00, 783.99, 659.25,
+                523.25, 659.25, 783.99, 1046.50, 1318.51, 1174.66, 1046.50, 783.99
+            ];
+            const droneNotes = [
+                130.81, 196.00, 261.63, 196.00, 130.81, 196.00, 261.63, 196.00
+            ];
+            this.bgmTimer = setInterval(() => {
+                if (this.muted || this.mode !== 'win') return;
+                const fIdx = this.step % festiveNotes.length;
+                const dIdx = this.step % droneNotes.length;
+                this.playTone(festiveNotes[fIdx], 0.2, 'square', 0.1, 0);
+                this.playTone(droneNotes[dIdx], 0.22, 'triangle', 0.12, 0);
+                this.step++;
+            }, 170);
+        }
+    }
+
+    startBGM(mode = 'play') {
+        this.mode = mode;
+        this.stopBGM();
+        this.init();
+
+        if (this.muted) return;
+
+        if (mode === 'play') {
+            if (this.mp3Ready.play) {
+                this.bgmPlay.currentTime = 0;
+                this.bgmPlay.play().catch(() => this.startSynthBGM('play'));
+            } else {
+                this.startSynthBGM('play');
+            }
+        } else if (mode === 'win') {
+            if (this.mp3Ready.win) {
+                this.bgmWin.currentTime = 0;
+                this.bgmWin.play().catch(() => this.startSynthBGM('win'));
+            } else {
+                this.startSynthBGM('win');
+            }
+        }
+    }
+
+    stopBGM() {
+        this.stopSynthBGM();
+        this.bgmPlay.pause();
+        this.bgmPlay.currentTime = 0;
+        this.bgmWin.pause();
+        this.bgmWin.currentTime = 0;
+    }
+}
+
+// ==========================================
+// 2. GAME CONFIGURATION & STATE
+// ==========================================
+const TARGET_PHRASE = "HAPPYDIWALI"; // 11 slots in the bottom grid as shown in reference
+const ALL_LETTERS = ['H', 'A', 'P', 'P', 'Y', 'D', 'I', 'W', 'A', 'L', 'I'];
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const coinsLabel = document.getElementById('coins-label');
+const overlay = document.getElementById('overlay');
+const winBar = document.getElementById('win-bar');
+const startBtn = document.getElementById('start-btn');
+const replayBtn = document.getElementById('replay-btn');
+const muteBtn = document.getElementById('mute-btn');
+
+const audio = new GameAudio();
+
+let gameState = {
+    status: 'menu', // 'menu', 'playing', 'won'
+    coins: 100,
+    slots: new Array(11).fill(null), // Holds collected characters in exact sequence
+    uncollectedIndices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    frame: 0,
+    winTimer: 0,
+    lanternGlow: 0
+};
+
+// Player Jellyfish Entity
+const player = {
+    x: 200,
+    y: 260,
+    vx: 0,
+    vy: 0,
+    width: 96,
+    height: 110,
+    speed: 4.6,
+    minY: 130,
+    maxY: 360,
+    tentaclePhase: 0
+};
+
+// Active Falling Letters
+let fallingLetters = [];
+let spawnTimer = 0;
+
+// Ambient Underwater Lines (matching the blue vertical streaks in reference)
+let waterStreaks = [];
+
+// Floating Score / Sparkle Particles
+let particles = [];
+
+// Diwali Sweets & Firecrackers (shown during Win animation)
+let sweets = [];
+
+// Input State
+const keys = {
+    ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false,
+    KeyA: false, KeyD: false, KeyW: false, KeyS: false
+};
+let pointerActive = false;
+let pointerTargetX = null;
+let pointerTargetY = null;
+
+// ==========================================
+// 3. RESPONSIVE CANVAS SIZING
+// ==========================================
+function resizeCanvas() {
+    const container = document.getElementById('canvas-container');
+    const rect = container.getBoundingClientRect();
+    // Maintain crisp internal logical resolution proportional to container
+    canvas.width = Math.max(320, Math.floor(rect.width));
+    canvas.height = Math.max(480, Math.floor(rect.height));
+
+    // Update jellyfish vertical swimming bounds ("slightly up and down" around center)
+    const centerY = canvas.height * 0.42;
+    player.minY = centerY - canvas.height * 0.14;
+    player.maxY = centerY + canvas.height * 0.14;
+
+    if (gameState.status === 'menu') {
+        player.x = canvas.width / 2;
+        player.y = centerY;
+    }
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+// ==========================================
+// 4. INITIALIZATION & RESET
+// ==========================================
+function initAmbientStreaks() {
+    waterStreaks = [];
+    for (let i = 0; i < 14; i++) {
+        waterStreaks.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            len: 10 + Math.random() * 14,
+            speed: 0.4 + Math.random() * 0.6
+        });
+    }
+}
+
+function resetGame(e) {
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
+
+    // Reset core game state
+    gameState.status = 'playing';
+    gameState.coins = 100;
+    gameState.slots = new Array(11).fill(null);
+    gameState.uncollectedIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    gameState.frame = 0;
+    gameState.winTimer = 0;
+    gameState.lanternGlow = 0;
+    coinsLabel.textContent = `Coins: ${gameState.coins}`;
+
+    // Re-center and reset player jellyfish
+    resizeCanvas();
+    player.x = canvas.width / 2;
+    player.y = canvas.height * 0.42;
+    player.vx = 0;
+    player.vy = 0;
+    player.tentaclePhase = 0;
+
+    // Clear all active entities and input states
+    fallingLetters = [];
+    particles = [];
+    sweets = [];
+    spawnTimer = 15;
+    pointerActive = false;
+    pointerTargetX = null;
+    pointerTargetY = null;
+    Object.keys(keys).forEach(k => { keys[k] = false; });
+
+    // Re-initialize ambient background streaks
+    initAmbientStreaks();
+
+    // Update UI overlays
+    overlay.classList.add('hidden');
+    winBar.classList.add('hidden');
+
+    // Reset and restart 8-bit chiptune audio
+    audio.init();
+    audio.stopBGM();
+    audio.startBGM('play');
+
+    // Immediately spawn the first falling letter so gameplay starts right away
+    spawnFallingLetter();
+}
+
+// ==========================================
+// 5. SPAWNING & COLLECTION MECHANICS
+// ==========================================
+function getRandomNeededChar() {
+    if (gameState.uncollectedIndices.length === 0) return 'I';
+    const randIdx = gameState.uncollectedIndices[Math.floor(Math.random() * gameState.uncollectedIndices.length)];
+    return TARGET_PHRASE[randIdx];
+}
+
+function spawnFallingLetter() {
+    if (gameState.uncollectedIndices.length === 0) return;
+    // Limit simultaneous falling letters so screen remains clean and playable
+    if (fallingLetters.length >= 3) return;
+
+    const margin = 42;
+    const x = margin + Math.random() * (canvas.width - margin * 2);
+
+    fallingLetters.push({
+        x: x,
+        y: -25,
+        char: getRandomNeededChar(),
+        vy: 1.8 + Math.random() * 0.9,
+        cycleTimer: 0,
+        cycleInterval: 22 + Math.floor(Math.random() * 14), // Cycles randomly until caught
+        size: 30
+    });
+}
+
+function collectLetter(char, hitX, hitY) {
+    // Find the first matching uncollected slot index in "HAPPYDIWALI"
+    // Note: Duplicates like P, A, I are placed into their proper sequential slots!
+    let targetSlot = -1;
+    for (let i = 0; i < TARGET_PHRASE.length; i++) {
+        if (gameState.slots[i] === null && TARGET_PHRASE[i] === char) {
+            targetSlot = i;
+            break;
+        }
+    }
+
+    // Fallback: if all instances of `char` were just filled by another simultaneous catch,
+    // award the next needed slot so every catch feels rewarding!
+    if (targetSlot === -1 && gameState.uncollectedIndices.length > 0) {
+        targetSlot = gameState.uncollectedIndices[0];
+        char = TARGET_PHRASE[targetSlot];
+    }
+
+    if (targetSlot !== -1) {
+        gameState.slots[targetSlot] = char;
+        gameState.uncollectedIndices = gameState.uncollectedIndices.filter(idx => idx !== targetSlot);
+        gameState.coins += 25;
+        coinsLabel.textContent = `Coins: ${gameState.coins}`;
+
+        audio.playCollect();
+
+        // Spawn celebratory pixel sparkles
+        for (let i = 0; i < 14; i++) {
+            const angle = (Math.PI * 2 * i) / 14;
+            const spd = 1.5 + Math.random() * 3;
+            particles.push({
+                x: hitX,
+                y: hitY,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd,
+                color: i % 2 === 0 ? '#ffea00' : '#ff4dff',
+                life: 28
+            });
+        }
+
+        // Update any remaining falling letters so they don't get stuck on a fully collected letter
+        fallingLetters.forEach(fl => {
+            const stillNeeded = gameState.uncollectedIndices.some(idx => TARGET_PHRASE[idx] === fl.char);
+            if (!stillNeeded && gameState.uncollectedIndices.length > 0) {
+                fl.char = getRandomNeededChar();
+            }
+        });
+
+        // Check Win Condition
+        if (gameState.uncollectedIndices.length === 0) {
+            triggerWinState();
+        }
+    }
+}
+
+function triggerWinState() {
+    gameState.status = 'won';
+    fallingLetters = [];
+    audio.playWinFanfare();
+    audio.startBGM('win');
+
+    // Gently center the jellyfish as it transforms into the hanging Diwali lantern
+    winBar.classList.remove('hidden');
+
+    // Spawn initial batch of raining Diwali sweets & crackers
+    for (let i = 0; i < 16; i++) {
+        spawnSweet(Math.random() * canvas.height * 0.7);
+    }
+}
+
+function spawnSweet(startY = -20) {
+    // Types matching the reference video:
+    // 0: Kaju Katli (white diamond with silver varq grid)
+    // 1: Motichoor Laddu (golden-orange speckled sphere)
+    // 2: Sparkler / Rocket Cracker (yellow & red firecracker with sparks)
+    // 3: Barfi / Jalebi swirl (orange square/spiral)
+    const types = ['katli', 'laddu', 'cracker', 'barfi'];
+    const type = types[Math.floor(Math.random() * types.length)];
+
+    sweets.push({
+        x: 24 + Math.random() * (canvas.width - 48),
+        y: startY,
+        vy: 1.1 + Math.random() * 1.3,
+        vx: Math.sin(Math.random() * Math.PI * 2) * 0.4,
+        rot: (Math.random() - 0.5) * 0.8,
+        vRot: (Math.random() - 0.5) * 0.03,
+        type: type
+    });
+}
+
+// ==========================================
+// 6. UPDATE LOOP
+// ==========================================
+function update() {
+    gameState.frame++;
+
+    // Update ambient water streaks (flowing downward)
+    if (Array.isArray(waterStreaks)) {
+        for (let i = 0; i < waterStreaks.length; i++) {
+            const s = waterStreaks[i];
+            if (!s) continue;
+            s.y += s.speed;
+            if (s.y > canvas.height + 20) {
+                s.y = -s.len - 10;
+                s.x = Math.random() * canvas.width;
+            }
+        }
+    }
+
+    // Update particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        if (!p) continue;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    if (gameState.status === 'playing') {
+        // Handle Keyboard / D-Pad Movement
+        let moveX = 0;
+        let moveY = 0;
+        if (keys.ArrowLeft || keys.KeyA) moveX -= 1;
+        if (keys.ArrowRight || keys.KeyD) moveX += 1;
+        if (keys.ArrowUp || keys.KeyW) moveY -= 1;
+        if (keys.ArrowDown || keys.KeyS) moveY += 1;
+
+        if (moveX !== 0 || moveY !== 0) {
+            pointerTargetX = null;
+            const len = Math.hypot(moveX, moveY);
+            player.x += (moveX / len) * player.speed;
+            player.y += (moveY / len) * player.speed;
+        } else if (pointerActive && pointerTargetX !== null) {
+            // Smooth follow towards touch/mouse drag
+            const dx = pointerTargetX - player.x;
+            const dy = pointerTargetY - player.y;
+            player.x += dx * 0.18;
+            player.y += dy * 0.18;
+        }
+
+        // Gentle idle bobbing
+        player.y += Math.sin(gameState.frame * 0.07) * 0.35;
+
+        // Clamp jellyfish inside playfield & vertical swimming corridor
+        const halfW = player.width * 0.45;
+        player.x = Math.max(halfW + 10, Math.min(canvas.width - halfW - 10, player.x));
+        player.y = Math.max(player.minY, Math.min(player.maxY, player.y));
+
+        // Spawn falling letters
+        spawnTimer--;
+        if (spawnTimer <= 0) {
+            spawnFallingLetter();
+            spawnTimer = 68;
+        }
+
+        // Update falling letters & check collision with jellyfish
+        for (let i = fallingLetters.length - 1; i >= 0; i--) {
+            const fl = fallingLetters[i];
+            if (!fl) continue;
+            fl.y += fl.vy;
+
+            // Randomly cycle letter until jellyfish collects it
+            fl.cycleTimer++;
+            if (fl.cycleTimer >= fl.cycleInterval) {
+                fl.cycleTimer = 0;
+                fl.char = getRandomNeededChar();
+                audio.playCycleTick();
+            }
+
+            // Hitbox check against jellyfish bell & upper tentacles
+            const dx = Math.abs(fl.x - player.x);
+            const dy = Math.abs(fl.y - (player.y - 10));
+            if (dx < player.width * 0.48 && dy < 38) {
+                collectLetter(fl.char, fl.x, fl.y);
+                fallingLetters.splice(i, 1);
+                continue;
+            }
+
+            // Remove if falls past the bottom letter box
+            if (fl.y > canvas.height - 70) {
+                fallingLetters.splice(i, 1);
+            }
+        }
+    } else if (gameState.status === 'won') {
+        gameState.winTimer++;
+        // Smoothly glide lantern to center stage
+        const targetX = canvas.width / 2;
+        const targetY = canvas.height * 0.43;
+        player.x += (targetX - player.x) * 0.08;
+        player.y += (targetY - player.y) * 0.08;
+
+        // Spawn raining Diwali sweets continuously
+        if (gameState.frame % 26 === 0 && sweets.length < 22) {
+            spawnSweet(-20);
+        }
+
+        for (let i = sweets.length - 1; i >= 0; i--) {
+            const sw = sweets[i];
+            if (!sw) continue;
+            sw.y += sw.vy;
+            sw.x += sw.vx + Math.sin(gameState.frame * 0.04 + i) * 0.3;
+            sw.rot += sw.vRot;
+
+            if (sw.y > canvas.height + 30) {
+                sweets.splice(i, 1);
+            }
+        }
+    }
+}
+
+// ==========================================
+// 7. 8-BIT PIXEL ART RENDERING
+// ==========================================
+
+/**
+ * Draws the Pink Jellyfish (gameplay) OR the Transformed Diwali Kandil Lantern (win state),
+ * matching the hand-drawn 8-bit style in the user's reference video.
+ */
+function drawJellyfishOrLantern() {
+    const cx = Math.round(player.x);
+    const cy = Math.round(player.y);
+    const isWon = gameState.status === 'won';
+
+    ctx.save();
+
+    // If won, draw the golden hanging rope from top of screen to the lantern!
+    if (isWon) {
+        const lanternTopY = cy - 46;
+        const knotY = lanternTopY - 22;
+
+        // Warm festive radial aura behind the lantern
+        const grad = ctx.createRadialGradient(cx, cy - 10, 10, cx, cy - 10, 115);
+        grad.addColorStop(0, 'rgba(255, 220, 60, 0.35)');
+        grad.addColorStop(0.6, 'rgba(255, 80, 200, 0.12)');
+        grad.addColorStop(1, 'rgba(35, 24, 84, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 10, 115, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main vertical golden rope
+        ctx.strokeStyle = '#c89d3c';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx, 0);
+        ctx.lineTo(cx, knotY);
+        ctx.stroke();
+
+        // Y-bridle strings attaching knot to lantern top rim
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, knotY);
+        ctx.lineTo(cx - 28, lanternTopY);
+        ctx.moveTo(cx, knotY);
+        ctx.lineTo(cx + 28, lanternTopY);
+        ctx.stroke();
+
+        // Knot pixel dot
+        ctx.fillStyle = '#ffea00';
+        ctx.fillRect(cx - 3, knotY - 3, 6, 6);
+    }
+
+    // 1. Draw Waving Tentacles / Lantern Streamers (7 distinct strands)
+    const offsets = [-34, -22, -11, 0, 11, 22, 34];
+    offsets.forEach((ox, idx) => {
+        const isBack = idx % 2 === 1;
+        ctx.strokeStyle = isBack ? '#8a148e' : '#d624db';
+        ctx.lineWidth = isBack ? 4 : 5;
+        ctx.lineCap = 'square';
+
+        ctx.beginPath();
+        const startY = isWon ? cy + 16 : cy - 12;
+        const length = isWon ? 82 : 76;
+        ctx.moveTo(cx + ox, startY);
+
+        for (let seg = 1; seg <= 6; seg++) {
+            const progress = seg / 6;
+            const wave = Math.sin(gameState.frame * 0.1 + idx * 0.9 + seg * 0.85) * (5 + progress * 4);
+            const px = Math.round((cx + ox + wave) / 2) * 2;
+            const py = Math.round((startY + progress * length) / 2) * 2;
+            ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    });
+
+    // 2. Draw Body: Pink Jellyfish Dome vs. Colorful Diwali Kandil Lantern
+    if (!isWon) {
+        // JELLYFISH DOME (Magenta/Pink 8-bit dome with dark outline and bright highlight)
+        const domeW = 94;
+        const domeH = 34;
+        const topY = cy - 36;
+
+        // Outer black pixel border
+        ctx.fillStyle = '#140824';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + 18, domeW / 2 + 3, domeH / 2 + 3, 0, Math.PI, 0);
+        ctx.fillRect(cx - domeW / 2 - 3, topY + 16, domeW + 6, 8);
+        ctx.fill();
+
+        // Main vivid magenta body
+        ctx.fillStyle = '#e024e8';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + 18, domeW / 2, domeH / 2, 0, Math.PI, 0);
+        ctx.fillRect(cx - domeW / 2, topY + 16, domeW, 6);
+        ctx.fill();
+
+        // Lower scalloped rim
+        ctx.fillStyle = '#b015b8';
+        ctx.fillRect(cx - domeW / 2 + 4, topY + 20, domeW - 8, 5);
+
+        // Top glossy pink-white pixel highlight
+        ctx.fillStyle = '#ff8cff';
+        ctx.fillRect(cx - 28, topY + 5, 52, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - 18, topY + 6, 26, 3);
+
+    } else {
+        // DIWALI LANTERN (KANDIL) - Multi-colored vertical ribs matching reference & streamer width!
+        const lanW = 104;
+        const lanH = 54;
+        const topY = cy - 42;
+
+        // Outer dark border
+        ctx.fillStyle = '#140824';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + lanH / 2, lanW / 2 + 4, lanH / 2 + 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer Magenta Shell
+        ctx.fillStyle = '#e024e8';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + lanH / 2, lanW / 2, lanH / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Red-Orange Inner Ribs
+        ctx.fillStyle = '#ff3b1f';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + lanH / 2, 36, lanH / 2 - 1, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Royal Blue Inner Ribs
+        ctx.fillStyle = '#2962ff';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + lanH / 2, 23, lanH / 2 - 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glowing Golden-Yellow Core
+        const pulse = Math.sin(gameState.frame * 0.2) * 2;
+        ctx.fillStyle = '#ffea00';
+        ctx.beginPath();
+        ctx.ellipse(cx, topY + lanH / 2, Math.max(8, 12 + pulse), lanH / 2 - 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rib divider lines for authentic 8-bit lantern panels
+        ctx.strokeStyle = '#140824';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, topY + 2);
+        ctx.lineTo(cx, topY + lanH - 2);
+        ctx.stroke();
+
+        // Top & Bottom Magenta Collar Rims
+        ctx.fillStyle = '#d41cd9';
+        ctx.strokeStyle = '#140824';
+        ctx.lineWidth = 3;
+        ctx.fillRect(cx - 34, topY - 5, 68, 8);
+        ctx.strokeRect(cx - 34, topY - 5, 68, 8);
+
+        ctx.fillRect(cx - 32, topY + lanH - 3, 64, 8);
+        ctx.strokeRect(cx - 32, topY + lanH - 3, 64, 8);
+    }
+
+    ctx.restore();
+}
+
+/**
+ * Draws a crisp 8-bit pixel block letter (Yellow with dark drop shadow)
+ */
+function drawPixelLetter(char, x, y, size = 28) {
+    ctx.save();
+    ctx.font = `bold ${size}px "Press Start 2P", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Dark pixel shadow
+    ctx.fillStyle = '#12082e';
+    ctx.fillText(char, Math.round(x) + 3, Math.round(y) + 3);
+
+    // Bright yellow letter fill
+    ctx.fillStyle = '#ffea00';
+    ctx.fillText(char, Math.round(x), Math.round(y));
+    ctx.restore();
+}
+
+/**
+ * Draws the 11-slot collection box at the bottom of the screen.
+ * When all letters are collected, festive blinking Diwali lights illuminate the frame!
+ */
+function drawLetterBoxes() {
+    const numBoxes = 11;
+    const marginX = 16;
+    const totalW = canvas.width - marginX * 2;
+    const boxW = Math.floor(totalW / numBoxes);
+    const actualTotalW = boxW * numBoxes;
+    const startX = Math.floor((canvas.width - actualTotalW) / 2);
+    const boxH = Math.min(54, Math.max(42, Math.floor(boxW * 1.45)));
+    const startY = canvas.height - boxH - 18;
+
+    ctx.save();
+
+    // Outer metallic grey frame
+    ctx.fillStyle = '#2d2d38';
+    ctx.fillRect(startX - 6, startY - 6, actualTotalW + 12, boxH + 12);
+
+    ctx.strokeStyle = '#7c7c8c';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(startX - 5, startY - 5, actualTotalW + 10, boxH + 10);
+
+    // Individual 11 slots
+    for (let i = 0; i < numBoxes; i++) {
+        const bx = startX + i * boxW;
+        ctx.fillStyle = '#1c1836';
+        ctx.fillRect(bx + 2, startY + 2, boxW - 4, boxH - 4);
+
+        ctx.strokeStyle = '#5a5a6e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bx, startY, boxW, boxH);
+
+        // Draw collected letter if present
+        const letter = gameState.slots[i];
+        if (letter) {
+            const fontSize = Math.max(14, Math.floor(boxW * 0.62));
+            drawPixelLetter(letter, bx + boxW / 2, startY + boxH / 2 + 2, fontSize);
+        }
+    }
+
+    // Win Celebration: Blinking Colored Diwali Fairy Lights along top & bottom of box!
+    if (gameState.status === 'won') {
+        const lightColors = ['#ff2ae5', '#ffea00', '#00ff66', '#00e5ff'];
+        const phase = Math.floor(gameState.frame / 12);
+
+        for (let i = 0; i <= numBoxes; i++) {
+            const lx = startX + i * boxW;
+            const colorTop = lightColors[(i + phase) % lightColors.length];
+            const colorBot = lightColors[(i + phase + 2) % lightColors.length];
+
+            // Top bulb
+            ctx.fillStyle = colorTop;
+            ctx.fillRect(lx - 4, startY - 8, 8, 6);
+
+            // Bottom bulb
+            ctx.fillStyle = colorBot;
+            ctx.fillRect(lx - 4, startY + boxH + 2, 8, 6);
+        }
+    }
+
+    ctx.restore();
+}
+
+/**
+ * Draws the raining Diwali Sweets & Firecrackers during the Win animation
+ */
+function drawSweets() {
+    sweets.forEach(sw => {
+        ctx.save();
+        ctx.translate(Math.round(sw.x), Math.round(sw.y));
+        ctx.rotate(sw.rot);
+
+        if (sw.type === 'katli') {
+            // Kaju Katli (Diamond sweet with silver varq cross-hatch)
+            ctx.fillStyle = '#f2f2f7';
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -13);
+            ctx.lineTo(15, 0);
+            ctx.lineTo(0, 13);
+            ctx.lineTo(-15, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cross hatch details
+            ctx.strokeStyle = '#9aa0b8';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-7, -6); ctx.lineTo(7, 6);
+            ctx.moveTo(-7, 6); ctx.lineTo(7, -6);
+            ctx.stroke();
+
+        } else if (sw.type === 'laddu') {
+            // Motichoor Laddu (Golden orange speckled sphere)
+            ctx.fillStyle = '#ff9900';
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Boondi pixel speckles
+            ctx.fillStyle = '#ffea00';
+            ctx.fillRect(-5, -4, 3, 3);
+            ctx.fillRect(2, -5, 3, 3);
+            ctx.fillRect(-3, 3, 3, 3);
+            ctx.fillRect(3, 2, 3, 3);
+
+        } else if (sw.type === 'cracker') {
+            // Diwali Firecracker / Rocket (Yellow cylinder with red stripes & sparks)
+            ctx.fillStyle = '#ffea00';
+            ctx.fillRect(-7, -11, 14, 22);
+            ctx.fillStyle = '#ff2a2a';
+            ctx.fillRect(-7, -6, 14, 4);
+            ctx.fillRect(-7, 3, 14, 4);
+
+            // Fuse & Sparks
+            ctx.strokeStyle = '#ff9900';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 11); ctx.lineTo(-4, 17);
+            ctx.moveTo(0, 11); ctx.lineTo(5, 16);
+            ctx.moveTo(0, 11); ctx.lineTo(0, 18);
+            ctx.stroke();
+
+        } else {
+            // Orange Jalebi / Barfi square
+            ctx.strokeStyle = '#ff7700';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-7, -7, 14, 14);
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(-3, -3, 6, 6);
+        }
+
+        ctx.restore();
+    });
+}
+
+function draw() {
+    // 1. Deep Indigo-Purple Background matching reference
+    ctx.fillStyle = '#231854';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle pixel grid texture
+    ctx.fillStyle = 'rgba(18, 10, 48, 0.25)';
+    for (let y = 0; y < canvas.height; y += 8) {
+        ctx.fillRect(0, y, canvas.width, 2);
+    }
+
+    // 2. Ambient Blue Vertical Water Streaks
+    ctx.fillStyle = '#1e64f0';
+    if (Array.isArray(waterStreaks)) {
+        waterStreaks.forEach(s => {
+            if (!s) return;
+            ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, Math.round(s.len));
+        });
+    }
+
+    // 3. Falling Letters (during gameplay)
+    if (gameState.status === 'playing') {
+        fallingLetters.forEach(fl => {
+            drawPixelLetter(fl.char, fl.x, fl.y, fl.size);
+        });
+    }
+
+    // 4. Raining Diwali Sweets (during win celebration)
+    if (gameState.status === 'won') {
+        drawSweets();
+    }
+
+    // 5. Player Jellyfish / Transformed Diwali Lantern
+    drawJellyfishOrLantern();
+
+    // 6. Sparkle Particles
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4);
+    });
+
+    // 7. Bottom 11-Slot Collection Grid
+    drawLetterBoxes();
+}
+
+// ==========================================
+// 8. MAIN ANIMATION LOOP & CONTROLS
+// ==========================================
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Keyboard Listeners
+window.addEventListener('keydown', (e) => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = true;
+        e.preventDefault();
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = false;
+    }
+});
+
+// Touch & Mouse Drag on Canvas
+function handlePointerMove(clientX, clientY) {
+    if (gameState.status !== 'playing') return;
+    const rect = canvas.getBoundingClientRect();
+    pointerTargetX = clientX - rect.left;
+    pointerTargetY = clientY - rect.top;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    pointerActive = true;
+    handlePointerMove(e.clientX, e.clientY);
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (pointerActive) handlePointerMove(e.clientX, e.clientY);
+});
+
+window.addEventListener('mouseup', () => {
+    pointerActive = false;
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 0) {
+        pointerActive = true;
+        handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+    if (pointerActive && e.touches.length > 0) {
+        handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => {
+    pointerActive = false;
+});
+
+// On-screen D-Pad Button Bindings
+function bindDpadButton(btnId, keyCode) {
+    const btn = document.getElementById(btnId);
+    const press = (e) => {
+        e.preventDefault();
+        keys[keyCode] = true;
+        btn.classList.add('active');
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyCode] = false;
+        btn.classList.remove('active');
+    };
+
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+}
+
+bindDpadButton('btn-left', 'ArrowLeft');
+bindDpadButton('btn-right', 'ArrowRight');
+bindDpadButton('btn-up', 'ArrowUp');
+bindDpadButton('btn-down', 'ArrowDown');
+
+// Start, Replay & Mute Button Events
+startBtn.addEventListener('click', resetGame);
+replayBtn.addEventListener('click', resetGame);
+replayBtn.addEventListener('touchend', resetGame);
+
+muteBtn.addEventListener('click', () => {
+    audio.init();
+    const isMuted = audio.toggleMute();
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+});
+
+// Boot on Window Load
+window.onload = function() {
+    resizeCanvas();
+    initAmbientStreaks();
+    gameLoop();
+};
+</script>
+</body>
+</html>
